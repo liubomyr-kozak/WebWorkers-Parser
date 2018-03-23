@@ -1,15 +1,14 @@
 
 export function worker(workerEv) {
-  let Worker = this;
-  http(workerEv.data.URL);
-  function http(url) {
 
+  http(workerEv.data.URL);
+
+  function http(url) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
 
-    xhr.onload = function (e) {
-      console.log('close')
-      Worker.postMessage({
+    xhr.onload = (e) => {
+      this.postMessage({
         result: JSON.parse(xhr.response),
         index: workerEv.data.index,
       });
