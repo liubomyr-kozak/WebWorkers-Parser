@@ -1,0 +1,10 @@
+:host{
+    padding: 20px 0 0;
+    display: block;
+    position: relative;
+}
+.progressbar{
+    position: fixed;
+    width: 100%;
+    top: 0;
+}

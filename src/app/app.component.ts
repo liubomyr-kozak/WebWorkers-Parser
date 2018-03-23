@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import 'rxjs/add/operator/map'
+import "rxjs/Rx";
+import 'rxjs/add/operator/debounceTime';
 
 import * as parseWorker from './parse-page.worker';
+import { FormControl } from '@angular/forms';
 
 const WIKI_URL = 'https://en.wikipedia.org/w/api.php';
 // const PARAMS = new HttpParams({
@@ -43,6 +44,11 @@ const WIKI_URL = 'https://en.wikipedia.org/w/api.php';
 // };
 
 
+interface LinksList {
+  title: string,
+  ref: LinksList[],
+  isRefHidden: boolean
+}
 
 @Component({
   selector: 'app-root',
@@ -50,17 +56,34 @@ const WIKI_URL = 'https://en.wikipedia.org/w/api.php';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  links = [];
+  links:LinksList[] = [];
+  searchDeepValue:FormControl = new FormControl(50);
+
   private worker: Worker
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.initWebWorker();
   }
 
   ngOnInit() {
+   
     this.worker.postMessage({
-      URL: this.createWikiLink('Europe')
+      URL: this.createWikiLink('Europe'),
+      title: 'Europe'
     })
+
+    this.searchDeepValue.valueChanges
+      .debounceTime(400)
+      .distinctUntilChanged()
+      .subscribe(newValue => {
+        this.links.length = 0;
+        // this.progressbar.valuePragrass = 0;
+        // this.progressbar.compliteIndex = 0;
+        this.worker.postMessage({
+          URL: this.createWikiLink('Europe'),
+          title: 'Europe'
+        })
+      });
   }
 
   private createWikiLink(page) {
@@ -68,85 +91,61 @@ export class AppComponent implements OnInit {
   }
   private initWebWorker() {
 
-    let blob = new Blob(['(this.onmessage=', parseWorker.worker.toString(), ')'], { type: "text/javascript" });
+    let blob = new Blob(['(this.onmessage=', parseWorker.worker.toString(), ')'], { type: 'application/javascript; charset=utf-8' });
     this.worker = new Worker((<any>window).URL.createObjectURL(blob));
 
+
     this.worker.onmessage = (e) => {
+      // this.progressbar.compliteLoad();
 
+      if (!e.data.result.parse) {
+        console.log(e.data.result.parse);
+        return;
+      }
 
+      // this.progressbar.loaderElementName = e.data.result.parse.title;
 
       if (e.data.index >= 0) {
-        this.links[e.data.index] = e.data.result.parse.links.map((link) => {
-          if (link.ns == 0) {
+    
+        // this.progressbar.valuePragrass = (this.progressbar.getComplitedLoadIndex() * 100) / this.links.length - 1;
+
+
+        this.links[e.data.index].ref = e.data.result.parse.links
+          .filter((refLink, ind) => refLink.ns == 0)
+          .map(refLink => {
             return {
-              title: link['*'],
-              ref: []
+              title: refLink['*'],
+              ref: [],
             }
-          }
-        })
+          })
+
       } else {
-        this.links = e.data.result.parse.links.map((link) => {
-          if (link.ns == 0) {
+        // this.progressbar.valuePragrass = 100;
+
+        this.links = e.data.result.parse.links
+          .filter((link, ind) => link.ns == 0 && ind < this.searchDeepValue.value)
+          .map((link, ind, arr) => {
             return {
               title: link['*'],
-              ref: []
+              ref: [],
+              isRefHidden: false
             }
-          }
-        })
+          });
 
         this.links.forEach((link, index) => {
-
-          // this.worker.postMessage({
-          //   URL: this.createWikiLink(link.title),
-          //   index
-          // })
+          setTimeout(() => {
+            this.worker.postMessage({
+              URL: this.createWikiLink(link.title),
+              index,
+              title: link.title
+            })
+          }, 0)
         })
       }
     };
   }
+
+  toggleDropdown(list) {
+    list.isRefHidden = !list.isRefHidden;
+  }
 }
-
-
-// this.http
-//       .get(WIKI_URL, {
-//         params: {
-//           action: 'query',
-//           format: 'json',
-//           origin: '*',
-//           titles: 'Europe'
-//         }
-//       })
-//       .map((res) => {
-
-//         const parser: DOMParser = new DOMParser();
-//         const htmlDoc = parser.parseFromString(res.text(), "text/html");
-//         const DomEl: NodeListOf<HTMLAnchorElement> = htmlDoc.getElementsByTagName('a')
-//         let LinkUrl: {}[] = [];
-
-//         for (let index = 0; index < DomEl.length; index++) {
-//           LinkUrl.push({
-//             link: DomEl[index].href,
-//             text: DomEl[index].text
-//           });
-//         }
-
-//         debugger
-
-//       })
-//       .subscribe((res) => {
-//         // console.log(res)
-//       });
-
-
-
-// const parser: DOMParser = new DOMParser();
-        // const htmlDoc = parser.parseFromString(response['parse'].text["*"], "text/html");
-        // const DomEl: NodeListOf<HTMLAnchorElement> = htmlDoc.getElementsByTagName('a')
-        // let LinkUrl: {}[] = [];
-
-        // for (let index = 0; index < DomEl.length; index++) {
-        //   LinkUrl.push({
-        //     link: DomEl[index].href,
-        //     text: DomEl[index].text
-        //   });
-        // }

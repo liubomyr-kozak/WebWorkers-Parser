@@ -8,12 +8,14 @@ export function worker(workerEv) {
     xhr.open('GET', url, true);
 
     xhr.onload = function (e) {
-
+      console.log('close')
       Worker.postMessage({
         result: JSON.parse(xhr.response),
-        index: workerEv.data.index
+        index: workerEv.data.index,
       });
-      close();
+
+      // Worker.postMessage(JSON.parse(xhr.response));
+      // close();
     };
 
     xhr.send();

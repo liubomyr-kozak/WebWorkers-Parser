@@ -1,11 +1,33 @@
+<ngb-progressbar type="warning" class="progressbar" [value]="progressbar.valuePragrass" [striped]="true" [animated]="true">
+  {{progressbar.loaderElementName}} 
+  {{progressbar.valuePragrass}}%
+</ngb-progressbar>
 
+<input type="number" [formControl]="searchDeepValue">
 
+<table class="table">
+  <tbody>
+    <tr *ngFor="let link of links">
+      <td>
+        {{link.title}}
+        <span *ngIf="link.ref.length">
+          {{link.ref.length}}
 
-<div *ngFor="let link of links">
-  {{link.title}}
+          <button class="btn-primary" (click)="toggleDropdown(link)">
+            display reference links
+          </button>
 
-
-  <!-- <div *ngFor="let ref of link?.ref">
-     -- {{ref.title}}
-  </div> -->
-</div>
+          <table *ngIf="link.isRefHidden" class="table">
+            <tbody>
+              <tr *ngFor="let ref of link.ref">
+                <td>
+                  {{ref.title}}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </span>
+      </td>
+    </tr>
+  </tbody>
+</table>
